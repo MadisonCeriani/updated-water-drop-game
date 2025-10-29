@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 160" width="120" height="160">
+  <!-- Outer dark stroke -->
+  <path d="M60 6 C46 34 20 66 20 96 C20 126 40 150 60 150 C80 150 100 126 100 96 C100 66 74 34 60 6 Z" fill="none" stroke="#0b2430" stroke-width="8" stroke-linejoin="round"/>
+  <!-- Main fill gradient -->
+  <defs>
+    <linearGradient id="g1" x1="0" x2="0" y1="0" y2="1">
+      <stop offset="0%" stop-color="#62c0ff"/>
+      <stop offset="100%" stop-color="#1189f5"/>
+    </linearGradient>
+    <filter id="innerShadow" x="-50%" y="-50%" width="200%" height="200%">
+      <feOffset dx="-4" dy="-6" result="off"/>
+      <feGaussianBlur in="off" stdDeviation="6" result="blur"/>
+      <feComposite in="SourceGraphic" in2="blur" operator="over"/>
+    </filter>
+  </defs>
+  <path d="M60 12 C48 36 26 64 26 96 C26 128 44 144 60 144 C76 144 94 128 94 96 C94 64 72 36 60 12 Z" fill="url(#g1)"/>
+  <!-- glossy highlight -->
+  <path d="M44 36 C48 28 66 24 74 34 C66 32 56 38 50 46 C46 50 42 44 44 36 Z" fill="rgba(255,255,255,0.9)" opacity="0.95"/>
+  <!-- subtle lower shine -->
+  <ellipse cx="60" cy="120" rx="20" ry="6" fill="rgba(255,255,255,0.08)" />
+</svg>
