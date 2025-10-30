@@ -40,6 +40,25 @@ const restartBtn = document.getElementById('restart-btn');
 const resetBtn = document.getElementById('reset-btn');
 const pauseBtn = document.getElementById('pause-btn');
 let paused = false;
+// Splash sound element (for clean drops)
+const splashSfxEl = document.getElementById && document.getElementById('splash-sfx');
+const splashSfx = splashSfxEl ? splashSfxEl : new Audio('splash-effect-229315.mp3');
+splashSfx.preload = 'auto';
+splashSfx.volume = 0.75;
+
+function playSplash() {
+  try {
+    // clone so multiple plays can overlap
+    const s = splashSfx.cloneNode();
+    s.volume = splashSfx.volume;
+    s.play().catch(() => {});
+  } catch (err) {
+    // fallback
+    const s = new Audio(splashSfx.src || 'splash-effect-229315.mp3');
+    s.volume = splashSfx.volume;
+    s.play().catch(() => {});
+  }
+}
 
 // Utility: random integer in [min, max]
 function randInt(min, max) {
@@ -398,7 +417,11 @@ function spawnDrop() {
     ev.stopPropagation();
     wrapper.classList.add('collected');
     if (isPolluted) score = Math.max(-9999, score - 1);
-    else score += 1;
+    else {
+      score += 1;
+      // play splash sound for clean drops
+      playSplash();
+    }
     scoreEl.textContent = score;
     // Floating feedback
     showFloatingScore(x + size / 2, wrapper.getBoundingClientRect().top + 10, isPolluted ? '-1' : '+1', isPolluted ? '#ff6b6b' : '#1ec6ff');
