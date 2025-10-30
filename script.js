@@ -27,6 +27,10 @@ let canIntervalId = null;
 // oil spill feature removed
 let halfwayShown = false;
 let halfwayTimeoutId = null;
+// Bomb mechanic: shows a bomb in medium/hard mode; clicking it makes all drops polluted for 3s
+let bombIntervalId = null;
+let bombActive = false;
+let bombTimeoutId = null;
 
 // Elements
 const scoreEl = document.getElementById('score');
@@ -109,6 +113,11 @@ function startSpawning() {
   // Spawn a water can every 10 seconds
   if (canIntervalId) clearInterval(canIntervalId);
   canIntervalId = setInterval(() => spawnCan(), 10000);
+  // Bomb: spawn every 5 seconds on medium & hard
+  if (bombIntervalId) { clearInterval(bombIntervalId); bombIntervalId = null; }
+  if (difficulty === 'medium' || difficulty === 'hard') {
+    bombIntervalId = setInterval(() => spawnBomb(), 5000);
+  }
 }
 
 function startCountdownInterval() {
@@ -154,7 +163,16 @@ function pauseGame() {
   // stop spawning and countdown
   if (spawnIntervalId) { clearInterval(spawnIntervalId); spawnIntervalId = null; }
   if (canIntervalId) { clearInterval(canIntervalId); canIntervalId = null; }
+  if (bombIntervalId) { clearInterval(bombIntervalId); bombIntervalId = null; }
+  if (bombTimeoutId) { clearTimeout(bombTimeoutId); bombTimeoutId = null; bombActive = false; }
+  if (bombIntervalId) { clearInterval(bombIntervalId); bombIntervalId = null; }
+
+  // remove any bomb elements and clear bomb timeouts
+  const bombs = Array.from(gameContainer.querySelectorAll('.bomb'));
+  bombs.forEach(b => b.remove());
+  if (bombTimeoutId) { clearTimeout(bombTimeoutId); bombTimeoutId = null; }
   if (countdownIntervalId) { clearInterval(countdownIntervalId); countdownIntervalId = null; }
+  if (bombIntervalId) { clearInterval(bombIntervalId); bombIntervalId = null; }
   // visually pause animations and block interactions inside game container
   gameContainer.classList.add('paused');
   if (pauseBtn) { pauseBtn.textContent = 'Resume'; pauseBtn.setAttribute('aria-pressed', 'true'); }
@@ -196,6 +214,10 @@ function endGame() {
   // Remove remaining drops with a short fade
   const drops = Array.from(gameContainer.querySelectorAll('.drop'));
   drops.forEach(d => d.remove());
+
+  // remove any bomb elements
+  const bombs = Array.from(gameContainer.querySelectorAll('.bomb'));
+  bombs.forEach(b => b.remove());
 
   // Show overlay with final score
   finalScoreEl.textContent = score;
@@ -375,6 +397,77 @@ function spawnCan() {
   gameContainer.appendChild(wrapper);
 }
 
+// Spawn a clickable bomb in the game container. Clicking it makes all drops polluted for 3s.
+function spawnBomb() {
+  if (!running) return;
+  // avoid multiple bombs at once
+  if (gameContainer.querySelector('.bomb')) return;
+  const wrapper = document.createElement('div');
+  wrapper.className = 'bomb';
+  wrapper.textContent = '💣';
+
+  const containerRect = gameContainer.getBoundingClientRect();
+  const size = 52;
+  const x = Math.random() * (containerRect.width - size - 8) + 4;
+  wrapper.style.left = x + 'px';
+
+  // Give the bomb a fall animation similar to drops so it falls from top to bottom
+  const fallTime = randInt(currentMinFallTime + 400, currentMaxFallTime + 900);
+  wrapper.style.animation = `fall ${fallTime}ms linear forwards`;
+
+  // random rotation for personality
+  const rotClass = Math.random() > 0.5 ? 'rotate-1' : 'rotate-2';
+  wrapper.classList.add(rotClass);
+
+  // When clicked, activate polluted state for 3s and remove bomb
+  wrapper.addEventListener('pointerdown', (ev) => {
+    ev.stopPropagation();
+    activateBombPollution();
+    wrapper.remove();
+  }, { once: true });
+
+  // Remove when reaches bottom
+  wrapper.addEventListener('animationend', () => wrapper.remove());
+
+  // Safety: auto-remove after a reasonable time if something prevents animationend
+  setTimeout(() => { if (wrapper.parentNode) wrapper.remove(); }, fallTime + 500);
+
+  gameContainer.appendChild(wrapper);
+}
+
+// Turn all drops polluted for a short duration, then restore their original state
+function activateBombPollution() {
+  if (bombActive) return;
+  bombActive = true;
+
+  // visually and logically mark all current drops as polluted
+  const dropWrappers = gameContainer.querySelectorAll('.drop');
+  dropWrappers.forEach(w => {
+    w.dataset.polluted = 'true';
+    const img = w.querySelector('img');
+    if (img) { img.src = 'img/polluted-drop.svg'; img.alt = 'Polluted drop'; }
+  });
+
+  // clear any existing bomb timeout
+  if (bombTimeoutId) { clearTimeout(bombTimeoutId); bombTimeoutId = null; }
+
+  bombTimeoutId = setTimeout(() => {
+    bombActive = false;
+    // restore each drop to its original pollution state
+    const drops = gameContainer.querySelectorAll('.drop');
+    drops.forEach(w => {
+      const orig = w.dataset.origPolluted === 'true';
+      w.dataset.polluted = orig ? 'true' : 'false';
+      const img = w.querySelector('img');
+      if (img) {
+        img.src = orig ? 'img/polluted-drop.svg' : 'img/clean-drop.svg';
+        img.alt = orig ? 'Polluted drop' : 'Clean drop';
+      }
+    });
+    bombTimeoutId = null;
+  }, 3000);
+}
+
 // oil spill feature removed
 
 // Create a single drop. Randomly decides clean vs polluted.
@@ -386,9 +479,15 @@ function spawnDrop() {
 
   // Decide type: clean more likely than polluted
   const isPolluted = Math.random() < 0.28; // ~28% polluted
+  // if a bomb is active, new drops should be polluted while it lasts
+  const effectivePolluted = bombActive || isPolluted;
   const img = document.createElement('img');
-  img.src = isPolluted ? 'img/polluted-drop.svg' : 'img/clean-drop.svg';
-  img.alt = isPolluted ? 'Polluted drop' : 'Clean drop';
+  img.src = effectivePolluted ? 'img/polluted-drop.svg' : 'img/clean-drop.svg';
+  img.alt = effectivePolluted ? 'Polluted drop' : 'Clean drop';
+
+  // record original pollution state so we can restore after a bomb
+  wrapper.dataset.origPolluted = isPolluted ? 'true' : 'false';
+  wrapper.dataset.polluted = effectivePolluted ? 'true' : 'false';
 
   // Slight random rotation class for personality
   const rotClass = Math.random() > 0.5 ? 'rotate-1' : 'rotate-2';
@@ -416,7 +515,9 @@ function spawnDrop() {
   const onCollect = (ev) => {
     ev.stopPropagation();
     wrapper.classList.add('collected');
-    if (isPolluted) score = Math.max(-9999, score - 1);
+    // Evaluate pollution status at click time. Bombs temporarily force pollution.
+    const nowPolluted = bombActive || wrapper.dataset.polluted === 'true';
+    if (nowPolluted) score = Math.max(-9999, score - 1);
     else {
       score += 1;
       // play splash sound for clean drops
@@ -424,7 +525,7 @@ function spawnDrop() {
     }
     scoreEl.textContent = score;
     // Floating feedback
-    showFloatingScore(x + size / 2, wrapper.getBoundingClientRect().top + 10, isPolluted ? '-1' : '+1', isPolluted ? '#ff6b6b' : '#1ec6ff');
+    showFloatingScore(x + size / 2, wrapper.getBoundingClientRect().top + 10, nowPolluted ? '-1' : '+1', nowPolluted ? '#ff6b6b' : '#1ec6ff');
 
     // no can logic: just update score
 
