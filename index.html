@@ -17,9 +17,16 @@
                 <div class="score">Score: <span id="score">0</span></div>
                 <div class="timer">Time: <span id="time">30</span>s</div>
                 <div class="hud-actions">
-                    <button id="start-btn" class="btn">Start</button>
-                    <button id="reset-btn" class="btn">Reset</button>
-                </div>
+                        <label for="difficulty-select" class="difficulty-label">Difficulty</label>
+                        <select id="difficulty-select" class="difficulty-select" aria-label="Select difficulty">
+                            <option value="easy">Easy</option>
+                            <option value="medium" selected>Medium</option>
+                            <option value="hard">Hard</option>
+                        </select>
+                        <button id="start-btn" class="btn">Start</button>
+                        <button id="pause-btn" class="btn" aria-pressed="false">Pause</button>
+                        <button id="reset-btn" class="btn">Reset</button>
+                    </div>
             </div>
         </header>
 
@@ -48,5 +55,10 @@
     <div class="logo-wrap" aria-hidden="true">
         <img src="img/cw_logo-horizontal.png" alt="charity: water" class="site-logo">
     </div>
+
+    <footer class="site-footer" aria-label="charity water link">
+        Provide Clean Water By Donating to Charity Water Now!
+        <a href="https://www.charitywater.org/" target="_blank" rel="noopener noreferrer">charity: water</a>
+    </footer>
 </body>
 </html>

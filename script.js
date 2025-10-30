@@ -1,9 +1,21 @@
-document.getElementById("start-btn").addEventListener("click", startGame);
 // Game constants
 const GAME_DURATION = 30; // seconds
 const SPAWN_INTERVAL = 700; // ms between spawn attempts
 const MIN_FALL_TIME = 3500; // ms
 const MAX_FALL_TIME = 6000; // ms
+
+// Difficulty configuration (values chosen to feel meaningfully different)
+const DIFFICULTY_SETTINGS = {
+  easy:  { spawnInterval: 900,  minFall: 4500, maxFall: 8000 },
+  medium:{ spawnInterval: 700,  minFall: 3500, maxFall: 6000 },
+  hard:  { spawnInterval: 480,  minFall: 2600, maxFall: 4200 }
+};
+
+// Current runtime values (initialized to medium defaults)
+let currentSpawnInterval = SPAWN_INTERVAL;
+let currentMinFallTime = MIN_FALL_TIME;
+let currentMaxFallTime = MAX_FALL_TIME;
+let difficulty = 'medium';
 
 // State
 let score = 0;
@@ -12,6 +24,9 @@ let running = false;
 let spawnIntervalId = null;
 let countdownIntervalId = null;
 let canIntervalId = null;
+// oil spill feature removed
+let halfwayShown = false;
+let halfwayTimeoutId = null;
 
 // Elements
 const scoreEl = document.getElementById('score');
@@ -23,6 +38,8 @@ const overlayTitle = document.getElementById('overlay-title');
 const finalScoreEl = document.getElementById('final-score');
 const restartBtn = document.getElementById('restart-btn');
 const resetBtn = document.getElementById('reset-btn');
+const pauseBtn = document.getElementById('pause-btn');
+let paused = false;
 
 // Utility: random integer in [min, max]
 function randInt(min, max) {
@@ -39,18 +56,99 @@ function startGame() {
   timeEl.textContent = timeLeft;
   overlay.classList.add('hidden');
   overlay.setAttribute('aria-hidden', 'true');
+  // reset paused/halfway state
+  paused = false;
+  if (pauseBtn) { pauseBtn.textContent = 'Pause'; pauseBtn.setAttribute('aria-pressed', 'false'); }
+  halfwayShown = false;
+  if (halfwayTimeoutId) { clearTimeout(halfwayTimeoutId); halfwayTimeoutId = null; }
+  const existingHalf = document.querySelector('.halfway-msg');
+  if (existingHalf) existingHalf.remove();
+  // Read difficulty selector (if present) and apply settings
+  const select = document.getElementById('difficulty-select');
+  if (select && select.value && DIFFICULTY_SETTINGS[select.value]) {
+    difficulty = select.value;
+    const s = DIFFICULTY_SETTINGS[difficulty];
+    currentSpawnInterval = s.spawnInterval;
+    currentMinFallTime = s.minFall;
+    currentMaxFallTime = s.maxFall;
+  } else {
+    // fallback to medium/defaults
+    difficulty = difficulty || 'medium';
+    currentSpawnInterval = DIFFICULTY_SETTINGS[difficulty].spawnInterval || SPAWN_INTERVAL;
+    currentMinFallTime = DIFFICULTY_SETTINGS[difficulty].minFall || MIN_FALL_TIME;
+    currentMaxFallTime = DIFFICULTY_SETTINGS[difficulty].maxFall || MAX_FALL_TIME;
+  }
 
-  // Spawn drops periodically
-  spawnIntervalId = setInterval(() => spawnDrop(), SPAWN_INTERVAL);
+  startSpawning();
+  startCountdownInterval();
+}
+
+function startSpawning() {
+  // Spawn drops periodically (using currentSpawnInterval)
+  if (spawnIntervalId) clearInterval(spawnIntervalId);
+  spawnIntervalId = setInterval(() => spawnDrop(), currentSpawnInterval);
   // Spawn a water can every 10 seconds
+  if (canIntervalId) clearInterval(canIntervalId);
   canIntervalId = setInterval(() => spawnCan(), 10000);
+}
 
-  // Start countdown timer that updates every second
+function startCountdownInterval() {
+  if (countdownIntervalId) clearInterval(countdownIntervalId);
   countdownIntervalId = setInterval(() => {
     timeLeft -= 1;
     timeEl.textContent = timeLeft;
+    // Show halfway message once when we reach half the game duration
+    if (!halfwayShown && timeLeft === Math.floor(GAME_DURATION / 2)) {
+      halfwayShown = true;
+      showHalfwayMessage();
+    }
     if (timeLeft <= 0) endGame();
   }, 1000);
+}
+
+// Show a transient halfway message in the middle of the game
+function showHalfwayMessage() {
+  // clear any existing
+  const existing = document.querySelector('.halfway-msg');
+  if (existing) existing.remove();
+  if (halfwayTimeoutId) { clearTimeout(halfwayTimeoutId); halfwayTimeoutId = null; }
+
+  const el = document.createElement('div');
+  el.className = 'halfway-msg';
+  el.textContent = "Halfway There 🎊";
+  document.body.appendChild(el);
+
+  // trigger show animation
+  requestAnimationFrame(() => el.classList.add('show'));
+
+  // remove after 3s
+  halfwayTimeoutId = setTimeout(() => {
+    el.classList.remove('show');
+    setTimeout(() => el.remove(), 300);
+    halfwayTimeoutId = null;
+  }, 3000);
+}
+
+function pauseGame() {
+  if (!running || paused) return;
+  paused = true;
+  // stop spawning and countdown
+  if (spawnIntervalId) { clearInterval(spawnIntervalId); spawnIntervalId = null; }
+  if (canIntervalId) { clearInterval(canIntervalId); canIntervalId = null; }
+  if (countdownIntervalId) { clearInterval(countdownIntervalId); countdownIntervalId = null; }
+  // visually pause animations and block interactions inside game container
+  gameContainer.classList.add('paused');
+  if (pauseBtn) { pauseBtn.textContent = 'Resume'; pauseBtn.setAttribute('aria-pressed', 'true'); }
+}
+
+function resumeGame() {
+  if (!running || !paused) return;
+  paused = false;
+  // restart spawning and countdown
+  startSpawning();
+  startCountdownInterval();
+  gameContainer.classList.remove('paused');
+  if (pauseBtn) { pauseBtn.textContent = 'Pause'; pauseBtn.setAttribute('aria-pressed', 'false'); }
 }
 
 // Update the water rectangle inside the can to visually reflect canFill.
@@ -64,6 +162,17 @@ function endGame() {
   if (canIntervalId) { clearInterval(canIntervalId); canIntervalId = null; }
   spawnIntervalId = null;
   countdownIntervalId = null;
+
+  // clear halfway message timeout and remove element if present
+  if (halfwayTimeoutId) { clearTimeout(halfwayTimeoutId); halfwayTimeoutId = null; }
+  const halfwayEl = document.querySelector('.halfway-msg');
+  if (halfwayEl) halfwayEl.remove();
+
+  // reset paused state and update pause button
+  if (paused) paused = false;
+  if (pauseBtn) { pauseBtn.textContent = 'Pause'; pauseBtn.setAttribute('aria-pressed', 'false'); }
+  // ensure any visual paused state is cleared
+  gameContainer.classList.remove('paused');
 
   // Remove remaining drops with a short fade
   const drops = Array.from(gameContainer.querySelectorAll('.drop'));
@@ -197,6 +306,15 @@ function resetGame() {
   // remove any existing cans
   const cans = Array.from(gameContainer.querySelectorAll('.drop.can'));
   cans.forEach(c => c.remove());
+  
+  // clear halfway message timeout and remove element if present
+  if (halfwayTimeoutId) { clearTimeout(halfwayTimeoutId); halfwayTimeoutId = null; }
+  const halfwayEl = document.querySelector('.halfway-msg');
+  if (halfwayEl) halfwayEl.remove();
+  // reset paused state and update pause button
+  if (paused) paused = false;
+  if (pauseBtn) { pauseBtn.textContent = 'Pause'; pauseBtn.setAttribute('aria-pressed', 'false'); }
+  gameContainer.classList.remove('paused');
 
   // restart the game fresh
   startGame();
@@ -221,7 +339,7 @@ function spawnCan() {
   wrapper.style.left = x + 'px';
 
   // fall with slightly slower animation so players can tap it
-  const fallTime = randInt(MIN_FALL_TIME + 800, MAX_FALL_TIME + 1200);
+  const fallTime = randInt(currentMinFallTime + 800, currentMaxFallTime + 1200);
   wrapper.style.animation = `fall ${fallTime}ms linear forwards`;
 
   const onCollect = (ev) => {
@@ -237,6 +355,8 @@ function spawnCan() {
   wrapper.addEventListener('animationend', () => wrapper.remove());
   gameContainer.appendChild(wrapper);
 }
+
+// oil spill feature removed
 
 // Create a single drop. Randomly decides clean vs polluted.
 function spawnDrop() {
@@ -270,7 +390,7 @@ function spawnDrop() {
   wrapper.style.left = x + 'px';
 
   // Random fall duration so drops feel natural
-  const fallTime = randInt(MIN_FALL_TIME, MAX_FALL_TIME);
+  const fallTime = randInt(currentMinFallTime, currentMaxFallTime);
   wrapper.style.animation = `fall ${fallTime}ms linear forwards`;
 
   // Click or tap to collect. Use pointerdown for responsiveness.
@@ -320,6 +440,7 @@ function showFloatingScore(x, y, text, color) {
 startBtn.addEventListener('click', startGame);
 restartBtn.addEventListener('click', () => startGame());
 if (resetBtn) resetBtn.addEventListener('click', resetGame);
+if (pauseBtn) pauseBtn.addEventListener('click', () => { if (paused) resumeGame(); else pauseGame(); });
 
 // Accessibility: pressing Space/Enter while overlay focused restarts
 overlay.addEventListener('keydown', (e) => {

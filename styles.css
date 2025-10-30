@@ -26,7 +26,9 @@ Fonts:
 }
 
 body {
-    font-family: Inter, system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial;
+    /* Use Georgia as the primary typeface and set bold weight for all text */
+    font-family: Georgia, 'Times New Roman', Times, serif;
+    font-weight: 700; /* Georgia Bold */
     background: #8BD1CB; /* light blue background */
     min-height: 100vh;
     display: flex;
@@ -174,12 +176,14 @@ body {
 .btn {
     appearance: none;
     border: none;
+    /* Ensure buttons also use Georgia Bold */
+    font-family: Georgia, 'Times New Roman', Times, serif;
+    font-weight: 700;
     background: linear-gradient(180deg, #ffde06 0%, #d7bf05 100%);
     color: hsla(0, 0%, 0%, 0.763);
     padding: 8px 14px;
     border-radius: 10px;
     cursor: pointer;
-    font-weight: 700;
     box-shadow: 0 6px 14px rgba(18,94,76,0.12);
 }
 
@@ -239,6 +243,13 @@ body {
     pointer-events: auto;
     transform-origin: center top;
     touch-action: manipulation;
+}
+
+/* When the game is paused, freeze drop animations and block interactions */
+.paused .drop,
+.paused .drop.can {
+    animation-play-state: paused !important;
+    pointer-events: none !important;
 }
 
 .drop img {
@@ -319,7 +330,7 @@ body {
 /* Charity logo fixed at bottom center */
 .logo-wrap {
     position: fixed;
-    bottom: 14px;
+    bottom: 40px; /* moved up so footer can sit below the logo */
     left: 50%;
     transform: translateX(-50%);
     z-index: 60; /* above other UI */
@@ -337,5 +348,48 @@ body {
 @media (max-width: 520px) {
     .site-logo { width: clamp(92px, 30vw, 180px); }
 }
+
+/* Footer link to charity: water */
+.site-footer {
+    position: fixed;
+    bottom: 8px; /* sits below the logo */
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 72; /* above logo */
+    background: transparent;
+    pointer-events: auto;
+}
+.site-footer a {
+    color: #073b3a;
+    text-decoration: underline;
+    font-weight: 700;
+    font-family: Georgia, 'Times New Roman', Times, serif;
+    font-size: 14px;
+    background: rgba(255,255,255,0.92);
+    padding: 6px 10px;
+    border-radius: 8px;
+    box-shadow: 0 6px 14px rgba(18,94,76,0.06);
+}
+
+/* Halfway message styling */
+.halfway-msg {
+    position: fixed;
+    left: 50%;
+    top: 14%;
+    transform: translateX(-50%) translateY(-10px);
+    background: rgba(255,255,255,0.98);
+    color: #074b46;
+    padding: 12px 18px;
+    border-radius: 12px;
+    box-shadow: 0 18px 40px rgba(2,40,36,0.16);
+    z-index: 120;
+    font-family: Georgia, 'Times New Roman', Times, serif;
+    font-weight: 700;
+    font-size: 18px;
+    opacity: 0;
+    transition: opacity 260ms ease, transform 260ms ease;
+    pointer-events: none;
+}
+.halfway-msg.show { opacity: 1; transform: translateX(-50%) translateY(0); }
 
 
