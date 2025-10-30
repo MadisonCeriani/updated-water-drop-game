@@ -349,26 +349,55 @@ body {
     .site-logo { width: clamp(92px, 30vw, 180px); }
 }
 
-/* Footer link to charity: water */
+/* Footer link to charity: water — centered and responsive under the logo */
 .site-footer {
     position: fixed;
-    bottom: 8px; /* sits below the logo */
+    /* keep footer visually centered underneath the logo */
     left: 50%;
     transform: translateX(-50%);
+    /* base distance from bottom; adjusted at smaller sizes below */
+    bottom: 8px;
     z-index: 72; /* above logo */
     background: transparent;
     pointer-events: auto;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 6px 10px;
+    max-width: 92vw;
+    width: auto;
+    box-sizing: border-box;
+    text-align: center;
 }
 .site-footer a {
     color: #073b3a;
     text-decoration: underline;
     font-weight: 700;
     font-family: Georgia, 'Times New Roman', Times, serif;
-    font-size: 14px;
+    font-size: clamp(12px, 2.4vw, 14px);
     background: rgba(255,255,255,0.92);
     padding: 6px 10px;
     border-radius: 8px;
     box-shadow: 0 6px 14px rgba(18,94,76,0.06);
+    white-space: nowrap;
+    display: inline-block;
+}
+
+/* Make sure the footer sits nicely below the logo on small screens and
+   doesn't overlap — nudge the logo up slightly and relax the footer's
+   padding/font-size so both remain legible. */
+@media (max-width: 520px) {
+    .logo-wrap { bottom: 56px; }
+    .site-footer { bottom: 8px; padding: 8px 12px; }
+    .site-footer a { font-size: 14px; padding: 8px 12px; white-space: normal; }
+}
+
+@media (max-width: 420px) {
+    /* give a little more room for very small screens */
+    .logo-wrap { bottom: 68px; }
+    .site-footer { bottom: 10px; padding: 8px 12px; }
+    .site-footer a { font-size: 13px; }
 }
 
 /* Halfway message styling */
