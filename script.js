@@ -6,9 +6,9 @@ const MAX_FALL_TIME = 6000; // ms
 
 // Difficulty configuration (values chosen to feel meaningfully different)
 const DIFFICULTY_SETTINGS = {
-  easy:  { spawnInterval: 900,  minFall: 4500, maxFall: 8000 },
-  medium:{ spawnInterval: 700,  minFall: 3500, maxFall: 6000 },
-  hard:  { spawnInterval: 480,  minFall: 2600, maxFall: 4200 }
+  easy:  { spawnInterval: 800,  minFall: 4400, maxFall: 7900 },
+  medium:{ spawnInterval: 600,  minFall: 3400, maxFall: 5900 },
+  hard:  { spawnInterval: 580,  minFall: 2600, maxFall: 4200 }
 };
 
 // Current runtime values (initialized to medium defaults)
