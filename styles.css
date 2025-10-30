@@ -31,9 +31,11 @@ body {
     font-weight: 700; /* Georgia Bold */
     background: #8BD1CB; /* light blue background */
     min-height: 100vh;
+    /* column layout so the wrapper grows and footer/logo sit below */
     display: flex;
+    flex-direction: column;
     align-items: center;
-    justify-content: center;
+    justify-content: flex-start;
     padding: 20px;
     color: #073b3a;
 }
@@ -45,6 +47,11 @@ body {
     flex-direction: column;
     gap: 18px;
     padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
+}
+
+/* Let the main wrapper grow to push footer to page bottom when needed */
+.game-wrapper {
+    flex: 1 1 auto;
 }
 
 /* Responsive base adjustments */
@@ -327,14 +334,18 @@ body {
 }
 /* removed can styles */
 
-/* Charity logo fixed at bottom center */
+/* Charity logo placed below the game container and centered */
 .logo-wrap {
-    position: fixed;
-    bottom: 40px; /* moved up so footer can sit below the logo */
-    left: 50%;
-    transform: translateX(-50%);
-    z-index: 60; /* above other UI */
+    /* participate in normal document flow so it sits underneath the game wrapper */
+    position: relative;
+    margin: 18px auto 6px auto; /* top, left/right, bottom */
+    left: auto;
+    transform: none;
+    z-index: 1;
     pointer-events: none; /* decorative */
+    display: flex;
+    justify-content: center;
+    width: 100%;
 }
 
 .site-logo {
@@ -349,15 +360,11 @@ body {
     .site-logo { width: clamp(92px, 30vw, 180px); }
 }
 
-/* Footer link to charity: water — centered and responsive under the logo */
+/* Footer link to charity: water — placed under the logo in the page flow */
 .site-footer {
-    position: fixed;
-    /* keep footer visually centered underneath the logo */
-    left: 50%;
-    transform: translateX(-50%);
-    /* base distance from bottom; adjusted at smaller sizes below */
-    bottom: 8px;
-    z-index: 72; /* above logo */
+    position: relative; /* normal flow */
+    margin: 6px auto 22px auto; /* small gap under logo and some bottom breathing room */
+    z-index: 2;
     background: transparent;
     pointer-events: auto;
     display: flex;
@@ -388,15 +395,17 @@ body {
    doesn't overlap — nudge the logo up slightly and relax the footer's
    padding/font-size so both remain legible. */
 @media (max-width: 520px) {
-    .logo-wrap { bottom: 56px; }
-    .site-footer { bottom: 8px; padding: 8px 12px; }
+    .site-logo { width: clamp(92px, 30vw, 180px); }
+    /* add slightly more spacing on small screens so the logo and footer don't feel cramped */
+    .logo-wrap { margin: 12px auto 8px auto; }
+    .site-footer { margin: 6px auto 18px auto; padding: 8px 12px; }
     .site-footer a { font-size: 14px; padding: 8px 12px; white-space: normal; }
 }
 
 @media (max-width: 420px) {
     /* give a little more room for very small screens */
-    .logo-wrap { bottom: 68px; }
-    .site-footer { bottom: 10px; padding: 8px 12px; }
+    .logo-wrap { margin: 16px auto 10px auto; }
+    .site-footer { margin: 8px auto 24px auto; padding: 8px 12px; }
     .site-footer a { font-size: 13px; }
 }
 
